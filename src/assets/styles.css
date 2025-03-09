@@ -1,0 +1,64 @@
+/* Основной контейнер */
+.main-container {
+    height: calc(100vh - 64px);
+    overflow: hidden;
+}
+
+/* Контейнер для окон */
+.window-container {
+    height: 100%;
+}
+
+/* Панели */
+.left-panel,
+.right-panel {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: auto;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin: 8px;
+    scrollbar-width: none;
+}
+
+.left-panel::-webkit-scrollbar,
+.right-panel::-webkit-scrollbar {
+    display: none;
+}
+
+/* Контент внутри панелей */
+.panel-content {
+    padding: 16px;
+}
+
+/* Линия для перетаскивания */
+.resize-handle {
+    width: 5px;
+    background: #ccc;
+    cursor: col-resize;
+    height: 100%;
+    margin: 8px 0;
+}
+
+/* Стили для списка методов */
+.method-item {
+    margin-bottom: 8px;
+}
+
+/* Стили для списка схем */
+.schema-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* Убираем стандартные отступы Vuetify */
+.v-container {
+    padding: 0 !important;
+}
+
+/* Убираем скроллинг всего body */
+body {
+    overflow: hidden;
+}
