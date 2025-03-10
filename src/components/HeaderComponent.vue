@@ -13,7 +13,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, inject } from 'vue'
+import { defineComponent, inject } from 'vue'
 
 export default defineComponent({
   name: 'HeaderComponent',

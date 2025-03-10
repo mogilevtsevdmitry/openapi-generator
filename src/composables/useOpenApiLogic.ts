@@ -1,4 +1,4 @@
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import * as yaml from 'js-yaml'
 import json5 from 'json5'
 
@@ -12,6 +12,64 @@ export function useOpenApiLogic() {
     onMounted(() => {
         const savedWidth = localStorage.getItem('leftPanelWidth')
         if (savedWidth) leftPanelWidth.value = parseInt(savedWidth, 10)
+
+        // Загрузка сохраненной схемы из localStorage
+        const savedSchema = localStorage.getItem('openApiSchema')
+        if (savedSchema) {
+            try {
+                parsedSchema.value = yaml.load(savedSchema)
+                console.log('Схема загружена из localStorage:', parsedSchema.value)
+            } catch (e) {
+                console.error('Ошибка загрузки схемы из localStorage:', e)
+            }
+        } else {
+            // Тестовая схема при первом запуске
+            const testSchema = {
+                paths: {
+                    '/api/v3/test-controller': {
+                        get: { tags: ['TestController'], summary: 'Тестовый GET' },
+                        post: { tags: ['TestController'], summary: 'Тестовый POST' },
+                    },
+                },
+                components: {
+                    schemas: {
+                        TestSchema: { type: 'object', properties: { id: { type: 'string' } } },
+                    },
+                    securitySchemes: {
+                        bearerAuth: {
+                            type: 'http',
+                            scheme: 'bearer',
+                            bearerFormat: 'JWT',
+                        },
+                    },
+                },
+            }
+            parsedSchema.value = testSchema
+            console.log('Тестовая схема загружена:', parsedSchema.value)
+        }
+
+        // Добавляем securitySchemes, если его нет
+        if (parsedSchema.value && !parsedSchema.value.components) {
+            parsedSchema.value.components = {}
+        }
+        if (parsedSchema.value && !parsedSchema.value.components.securitySchemes) {
+            parsedSchema.value.components.securitySchemes = {
+                bearerAuth: {
+                    type: 'http',
+                    scheme: 'bearer',
+                    bearerFormat: 'JWT',
+                },
+            }
+        }
+    })
+
+    // Сохранение схемы в localStorage при изменении
+    watch(parsedSchema, (newSchema) => {
+        if (newSchema) {
+            const yamlString = yaml.dump(newSchema)
+            localStorage.setItem('openApiSchema', yamlString)
+            console.log('Схема сохранена в localStorage:', newSchema)
+        }
     })
 
     // Начало изменения размера
@@ -73,6 +131,19 @@ export function useOpenApiLogic() {
                     }
                     if (parsed) {
                         parsedSchema.value = parsed
+                        // Добавляем securitySchemes, если его нет
+                        if (!parsedSchema.value.components) {
+                            parsedSchema.value.components = {}
+                        }
+                        if (!parsedSchema.value.components.securitySchemes) {
+                            parsedSchema.value.components.securitySchemes = {
+                                bearerAuth: {
+                                    type: 'http',
+                                    scheme: 'bearer',
+                                    bearerFormat: 'JWT',
+                                },
+                            }
+                        }
                         console.log('Схема загружена в parsedSchema:', parsedSchema.value)
                     } else {
                         console.error('Парсинг не вернул данные')
@@ -83,7 +154,7 @@ export function useOpenApiLogic() {
             }
             reader.readAsText(file)
         } else {
-            console.error('Файл не выбран или произошла ошибка при чтения')
+            console.error('Файл не выбран или произошла ошибка при чтении')
         }
     }
 
