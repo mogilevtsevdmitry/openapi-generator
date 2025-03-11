@@ -14,8 +14,8 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from 'vue'
-import ControllerEditForm from '@/components/RightPanel/ControllerEditForm.vue'
+import { defineComponent } from 'vue'
+import ControllerEditForm from './RightPanel/ControllerEditForm.vue'
 
 export default defineComponent({
   name: 'RightPanel',

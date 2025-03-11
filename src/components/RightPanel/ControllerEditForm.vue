@@ -25,16 +25,16 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, watch, inject, computed } from 'vue'
+import { defineComponent, inject, ref, watch } from 'vue'
 
 export default defineComponent({
   name: 'ControllerEditForm',
   props: {
     selectedTag: String, // Передаем выбранный контроллер
   },
-  emits: ['update-schema', 'close-form'], // События для обновления схемы и закрытия формы
+  emits: [ 'update-schema', 'close-form' ], // События для обновления схемы и закрытия формы
   setup(props, { emit }) {
-    const { parsedSchema, groupedControllers } = inject('openApiLogic') as any
+    const {parsedSchema, groupedControllers} = inject('openApiLogic') as any
 
     const isEditing = ref(false)
     const deleteDialog = ref(false)
@@ -54,7 +54,7 @@ export default defineComponent({
             if (parsedSchema.value?.paths) {
               for (const methods of Object.values(parsedSchema.value.paths) as any[]) {
                 for (const details of Object.values(methods)) {
-                  if (details.tags?.[0] === newTag && details.security) {
+                  if (details.tags?.[ 0 ] === newTag && details.security) {
                     requiresAuth = true
                     break
                   }
@@ -70,7 +70,7 @@ export default defineComponent({
             editState.value = { ...initialState.value }
           }
         },
-        { immediate: true }
+        { immediate: true },
     )
 
     // Сохранение изменений
@@ -80,24 +80,24 @@ export default defineComponent({
       const oldTag = initialState.value.tag
       const newTag = editState.value.tag
 
-      if (!groupedControllers.value[oldTag]) return
+      if (!groupedControllers.value[ oldTag ]) return
 
       const newPaths = Object.fromEntries(
-          Object.entries(parsedSchema.value.paths).map(([path, details]: [string, any]) => {
+          Object.entries(parsedSchema.value.paths).map(([ path, details ]: [ string, any ]) => {
             const newDetails = { ...details }
             for (const method of Object.keys(newDetails)) {
-              const methodDetails = newDetails[method]
-              if (methodDetails.tags?.[0] === oldTag) {
-                methodDetails.tags[0] = newTag
+              const methodDetails = newDetails[ method ]
+              if (methodDetails.tags?.[ 0 ] === oldTag) {
+                methodDetails.tags[ 0 ] = newTag
                 if (editState.value.requiresAuth) {
-                  methodDetails.security = [{ bearerAuth: [] }]
+                  methodDetails.security = [ { bearerAuth: [] } ]
                 } else {
                   delete methodDetails.security
                 }
               }
             }
-            return [path, newDetails]
-          })
+            return [ path, newDetails ]
+          }),
       )
 
       parsedSchema.value = { ...parsedSchema.value, paths: newPaths }
@@ -114,12 +114,12 @@ export default defineComponent({
     const deleteController = () => {
       if (parsedSchema.value && editState.value.tag) {
         const newPaths = Object.fromEntries(
-            Object.entries(parsedSchema.value.paths).filter(([_, details]: [string, any]) =>
-                !Object.values(details).some((methodDetails: any) => methodDetails.tags?.[0] === editState.value.tag)
-            )
+            Object.entries(parsedSchema.value.paths).filter(([ _, details ]: [ string, any ]) =>
+                !Object.values(details).some((methodDetails: any) => methodDetails.tags?.[ 0 ] === editState.value.tag),
+            ),
         )
         parsedSchema.value = { ...parsedSchema.value, paths: newPaths }
-        delete groupedControllers.value[editState.value.tag]
+        delete groupedControllers.value[ editState.value.tag ]
 
         emit('update-schema', parsedSchema.value)
         emit('close-form')

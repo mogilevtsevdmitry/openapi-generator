@@ -1,7 +1,7 @@
 <template>
   <v-col :cols="leftPanelWidth" class="left-panel">
     <div class="panel-content">
-      <ControllersList @open-edit-controller-form="openEditForm" />
+      <ControllersList @open-edit-form="openEditForm" />
       <SchemasList />
     </div>
   </v-col>
@@ -9,8 +9,8 @@
 
 <script lang="ts">
 import { defineComponent, inject } from 'vue'
-import ControllersList from '@/components/LeftPanel/ControllersList.vue'
-import SchemasList from '@/components/LeftPanel/SchemasList.vue'
+import SchemasList from './LeftPanel/SchemasList.vue'
+import ControllersList from './LeftPanel/ControllersList.vue'
 
 export default defineComponent({
   name: 'LeftPanel',

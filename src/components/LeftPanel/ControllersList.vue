@@ -7,9 +7,9 @@
       <v-expansion-panel-text>
         <v-expansion-panels flat>
           <v-expansion-panel
-              v-for="(methods, tag) in groupedControllers"
-              :key="tag"
-              @click.stop="handleControllerClick(tag)"
+            v-for="(methods, tag) in groupedControllers"
+            :key="tag"
+            @click.stop="handleControllerClick(tag)"
           >
             <v-expansion-panel-title>
               <strong class="clickable">{{ tag }}</strong>
@@ -29,29 +29,36 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, inject, ref } from 'vue'
-import MethodsList from '@/components/LeftPanel/MethodsList.vue'
+import { defineComponent, inject, ref } from 'vue';
+import MethodsList from './MethodsList.vue';
 
 export default defineComponent({
   name: 'ControllersList',
   components: { MethodsList },
   emits: ['open-edit-form'],
   setup(_, { emit }) {
-    const { groupedControllers, addMethodForController } = inject('openApiLogic') as any
-    const controllerPanel = ref([0]) // Открыть первый элемент по умолчанию
+    const { groupedControllers, addMethodForController } = inject(
+      'openApiLogic'
+    ) as any;
+    const controllerPanel = ref([0]); // Открыть первый элемент по умолчанию
 
     const handleControllerClick = (tag: string) => {
-      console.log('Start open-edit-controller-form', tag)
-      emit('open-edit-controller-form', tag)
-    }
+      console.log('Start open-edit-form', tag);
+      emit('open-edit-form', tag);
+    };
 
     const addMethod = (tag: string) => {
-      addMethodForController(tag, 'GET')
-    }
+      addMethodForController(tag, 'GET');
+    };
 
-    return { groupedControllers, controllerPanel, handleControllerClick, addMethod }
+    return {
+      groupedControllers,
+      controllerPanel,
+      handleControllerClick,
+      addMethod,
+    };
   },
-})
+});
 </script>
 
 <style scoped>
