@@ -3,29 +3,115 @@
   <v-card v-if="method" class="mt-4">
     <v-card-title>Редактирование метода: {{ method.name }}</v-card-title>
     <v-card-text>
-      <v-text-field v-model="editState.url" label="URL" outlined></v-text-field>
+      <v-text-field v-model="editState.url" label="URL" outlined @input="markDirty"></v-text-field>
       <v-select
-        v-model="editState.type"
-        :items="['GET', 'POST', 'PUT', 'DELETE', 'PATCH']"
-        label="Тип метода"
-        outlined
+          v-model="editState.type"
+          :items="['GET', 'POST', 'PUT', 'DELETE', 'PATCH']"
+          label="Тип метода"
+          outlined
+          @change="markDirty"
       ></v-select>
-      <v-text-field
-        v-model="editState.summary"
-        label="Описание (summary)"
-        outlined
-      ></v-text-field>
+      <v-text-field v-model="editState.summary" label="Описание (summary)" outlined @input="markDirty"></v-text-field>
+
+      <!-- Параметры пути -->
+      <h4>Параметры пути</h4>
+      <v-row v-for="(param, index) in editState.parameters" :key="index" align="center">
+        <v-col cols="4">
+          <v-text-field v-model="param.name" label="Имя" outlined @input="markDirty"></v-text-field>
+        </v-col>
+        <v-col cols="4">
+          <v-select
+              v-model="param.type"
+              :items="simpleTypes"
+              label="Тип"
+              outlined
+              @change="markDirty"
+          ></v-select>
+        </v-col>
+        <v-col cols="2">
+          <v-btn color="error" @click="removeParameter(index)">Удалить</v-btn>
+        </v-col>
+      </v-row>
+      <v-btn color="primary" @click="addParameter">Добавить параметр пути</v-btn>
+
+      <!-- Query параметры -->
+      <h4>Query параметры</h4>
+      <v-row v-for="(query, index) in editState.queryParams" :key="'query' + index" align="center">
+        <v-col cols="4">
+          <v-text-field v-model="query.name" label="Имя" outlined @input="markDirty"></v-text-field>
+        </v-col>
+        <v-col cols="4">
+          <v-select
+              v-model="query.type"
+              :items="allTypes"
+              label="Тип"
+              outlined
+              @change="markDirty"
+          ></v-select>
+        </v-col>
+        <v-col cols="2">
+          <v-btn color="error" @click="removeQueryParam(index)">Удалить</v-btn>
+        </v-col>
+      </v-row>
+      <v-btn color="primary" @click="addQueryParam">Добавить query параметр</v-btn>
+
+      <!-- Request Body -->
+      <h4 v-if="editState.type !== 'GET'">Request Body</h4>
+      <v-combobox
+          v-if="editState.type !== 'GET'"
+          v-model="editState.requestBody"
+          :items="schemaTypes"
+          label="Схемы для тела запроса (множественный выбор)"
+          multiple
+          chips
+          outlined
+          @change="markDirty"
+      ></v-combobox>
+
+      <!-- Ответы -->
+      <h4>Ответы</h4>
+      <v-row v-for="(response, index) in editState.responses" :key="'response' + index" align="center">
+        <v-col cols="3">
+          <v-text-field v-model="response.status" label="Код ответа" outlined @input="markDirty"></v-text-field>
+        </v-col>
+        <v-col cols="6">
+          <v-select
+              v-model="response.type"
+              :items="allTypes"
+              label="Тип данных"
+              outlined
+              @change="markDirty"
+          ></v-select>
+        </v-col>
+        <v-col cols="2">
+          <v-btn color="error" @click="removeResponse(index)">Удалить</v-btn>
+        </v-col>
+      </v-row>
+      <v-btn color="primary" @click="addResponse">Добавить ответ</v-btn>
     </v-card-text>
     <v-card-actions>
       <v-btn color="primary" @click="saveMethod">Сохранить</v-btn>
       <v-btn color="error" @click="deleteMethod">Удалить</v-btn>
-      <v-btn color="secondary" @click="closeForm">Закрыть</v-btn>
+      <v-btn color="secondary" @click="confirmClose">Закрыть</v-btn>
     </v-card-actions>
+
+    <!-- Диалог подтверждения закрытия -->
+    <v-dialog v-model="closeDialog" max-width="400px">
+      <v-card>
+        <v-card-title>Подтверждение</v-card-title>
+        <v-card-text>Схема была изменена, но не сохранена. Сохранить перед закрытием?</v-card-text>
+        <v-card-actions>
+          <v-btn color="primary" @click="saveAndClose">Сохранить и закрыть</v-btn>
+          <v-btn color="error" @click="closeWithoutSaving">Закрыть без сохранения</v-btn>
+          <v-btn color="secondary" @click="closeDialog = false">Отмена</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-card>
 </template>
 
 <script lang="ts">
-import { defineComponent, inject, ref } from 'vue';
+import { defineComponent, inject, ref, watch } from 'vue';
 
 export default defineComponent({
   name: 'MethodEditor',
@@ -35,12 +121,81 @@ export default defineComponent({
   emits: ['update-schema', 'close-form'],
   setup(props, { emit }) {
     const { parsedSchema } = inject('openApiLogic') as any;
+    const isDirty = ref(false);
+    const closeDialog = ref(false);
+
+    const simpleTypes = ['string', 'number', 'boolean', 'integer'];
+    const schemaTypes = Object.keys(parsedSchema.value?.components?.schemas || {});
+    const allTypes = [...simpleTypes, ...schemaTypes];
 
     const editState = ref({
       url: props.method?.url || '',
       type: props.method?.type || 'GET',
       summary: props.method?.name || '',
+      parameters: [] as { name: string; type: string }[],
+      queryParams: [] as { name: string; type: string }[],
+      requestBody: [] as string[],
+      responses: [] as { status: string; type: string }[],
     });
+
+    // Инициализация данных из parsedSchema
+    const initializeState = () => {
+      if (!props.method || !parsedSchema.value?.paths[props.method.url]?.[props.method.type.toLowerCase()]) return;
+      const methodData = parsedSchema.value.paths[props.method.url][props.method.type.toLowerCase()];
+
+      editState.value.summary = methodData.summary || '';
+      editState.value.parameters = (methodData.parameters || [])
+          .filter((p: any) => p.in === 'path')
+          .map((p: any) => ({ name: p.name, type: p.schema.type }));
+      editState.value.queryParams = (methodData.parameters || [])
+          .filter((p: any) => p.in === 'query')
+          .map((p: any) => ({ name: p.name, type: p.schema.type || p.schema.$ref?.split('/').pop() }));
+      editState.value.requestBody = methodData.requestBody?.content['application/json']?.schema.oneOf
+          ? methodData.requestBody.content['application/json'].schema.oneOf.map((s: any) => s.$ref.split('/').pop())
+          : methodData.requestBody?.content['application/json']?.schema.$ref
+              ? [methodData.requestBody.content['application/json'].schema.$ref.split('/').pop()]
+              : [];
+      editState.value.responses = Object.entries(methodData.responses || {}).map(([status, resp]: [string, any]) => ({
+        status,
+        type: resp.content?.['application/json']?.schema.type || resp.content?.['application/json']?.schema.$ref?.split('/').pop() || 'string',
+      }));
+    };
+
+    watch(() => props.method, initializeState, { immediate: true });
+
+    const markDirty = () => {
+      isDirty.value = true;
+    };
+
+    const addParameter = () => {
+      editState.value.parameters.push({ name: '', type: 'string' });
+      markDirty();
+    };
+
+    const removeParameter = (index: number) => {
+      editState.value.parameters.splice(index, 1);
+      markDirty();
+    };
+
+    const addQueryParam = () => {
+      editState.value.queryParams.push({ name: '', type: 'string' });
+      markDirty();
+    };
+
+    const removeQueryParam = (index: number) => {
+      editState.value.queryParams.splice(index, 1);
+      markDirty();
+    };
+
+    const addResponse = () => {
+      editState.value.responses.push({ status: '200', type: 'string' });
+      markDirty();
+    };
+
+    const removeResponse = (index: number) => {
+      editState.value.responses.splice(index, 1);
+      markDirty();
+    };
 
     const saveMethod = () => {
       if (!parsedSchema.value || !props.method) return;
@@ -51,24 +206,61 @@ export default defineComponent({
       const newType = editState.value.type.toLowerCase();
 
       const newPaths = { ...parsedSchema.value.paths };
-      const tag = newPaths[oldUrl][oldType]?.tags[0];
+      const tag = newPaths[oldUrl]?.[oldType]?.tags?.[0] || 'Uncategorized';
+
       if (oldUrl !== newUrl || oldType !== newType) {
-        // Удаляем старую запись
         delete newPaths[oldUrl][oldType];
         if (Object.keys(newPaths[oldUrl]).length === 0) delete newPaths[oldUrl];
       }
 
-      // Добавляем или обновляем новую запись
       if (!newPaths[newUrl]) newPaths[newUrl] = {};
       newPaths[newUrl][newType] = {
-        ...newPaths[oldUrl]?.[oldType],
         summary: editState.value.summary,
-        tags: [tag || 'Uncategorized'],
+        tags: [tag],
+        parameters: [
+          ...editState.value.parameters.map((p) => ({
+            name: p.name,
+            in: 'path',
+            required: true,
+            schema: { type: p.type },
+          })),
+          ...editState.value.queryParams.map((q) => ({
+            name: q.name,
+            in: 'query',
+            required: false,
+            schema: simpleTypes.includes(q.type) ? { type: q.type } : { $ref: `#/components/schemas/${q.type}` },
+          })),
+        ],
+        responses: editState.value.responses.reduce((acc, resp) => {
+          acc[resp.status] = {
+            description: '',
+            content: {
+              'application/json': {
+                schema: simpleTypes.includes(resp.type) ? { type: resp.type } : { $ref: `#/components/schemas/${resp.type}` },
+              },
+            },
+          };
+          return acc;
+        }, {} as any),
       };
+
+      if (editState.value.type !== 'GET' && editState.value.requestBody.length > 0) {
+        newPaths[newUrl][newType].requestBody = {
+          required: true,
+          content: {
+            'application/json': {
+              schema:
+                  editState.value.requestBody.length > 1
+                      ? { oneOf: editState.value.requestBody.map((s) => ({ $ref: `#/components/schemas/${s}` })) }
+                      : { $ref: `#/components/schemas/${editState.value.requestBody[0]}` },
+            },
+          },
+        };
+      }
 
       parsedSchema.value = { ...parsedSchema.value, paths: newPaths };
       emit('update-schema', parsedSchema.value);
-      emit('close-form');
+      isDirty.value = false; // Сбрасываем флаг после сохранения
     };
 
     const deleteMethod = () => {
@@ -85,11 +277,43 @@ export default defineComponent({
       emit('close-form');
     };
 
-    const closeForm = () => {
+    const confirmClose = () => {
+      if (isDirty.value) {
+        closeDialog.value = true;
+      } else {
+        emit('close-form');
+      }
+    };
+
+    const saveAndClose = () => {
+      saveMethod();
       emit('close-form');
     };
 
-    return { editState, saveMethod, deleteMethod, closeForm };
+    const closeWithoutSaving = () => {
+      closeDialog.value = false;
+      emit('close-form');
+    };
+
+    return {
+      editState,
+      simpleTypes,
+      allTypes,
+      schemaTypes,
+      addParameter,
+      removeParameter,
+      addQueryParam,
+      removeQueryParam,
+      addResponse,
+      removeResponse,
+      saveMethod,
+      deleteMethod,
+      confirmClose,
+      saveAndClose,
+      closeWithoutSaving,
+      closeDialog,
+      markDirty,
+    };
   },
 });
 </script>
