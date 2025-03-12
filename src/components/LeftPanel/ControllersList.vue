@@ -1,3 +1,4 @@
+// src/components/LeftPanel/ControllersList.vue
 <template>
   <v-expansion-panels flat v-model="controllerPanel">
     <v-expansion-panel>
@@ -9,17 +10,20 @@
           <v-expansion-panel
             v-for="(methods, tag) in groupedControllers"
             :key="tag"
-            @click.stop="handleControllerClick(tag)"
+            @click.stop="handleControllerClick(String(tag))"
           >
             <v-expansion-panel-title>
               <strong class="clickable">{{ tag }}</strong>
               <v-spacer></v-spacer>
-              <v-btn icon size="x-small" @click.stop="addMethod(tag)">
+              <v-btn icon size="x-small" @click.stop="addMethod(String(tag))">
                 <v-icon size="x-large" icon="mdi-plus"></v-icon>
               </v-btn>
             </v-expansion-panel-title>
             <v-expansion-panel-text eager>
-              <MethodsList :methods="methods" />
+              <MethodsList
+                :methods="methods"
+                @method-selected="handleMethodSelected"
+              />
             </v-expansion-panel-text>
           </v-expansion-panel>
         </v-expansion-panels>
@@ -35,7 +39,7 @@ import MethodsList from './MethodsList.vue';
 export default defineComponent({
   name: 'ControllersList',
   components: { MethodsList },
-  emits: ['open-edit-form'],
+  emits: ['open-edit-form', 'method-selected'], // Добавляем событие method-selected
   setup(_, { emit }) {
     const { groupedControllers, addMethodForController } = inject(
       'openApiLogic'
@@ -51,11 +55,21 @@ export default defineComponent({
       addMethodForController(tag, 'GET');
     };
 
+    const handleMethodSelected = (method: {
+      type: string;
+      name: string;
+      url: string;
+    }) => {
+      console.log('Метод передан в ControllersList:', method);
+      emit('method-selected', method); // Передаем событие дальше
+    };
+
     return {
       groupedControllers,
       controllerPanel,
       handleControllerClick,
       addMethod,
+      handleMethodSelected,
     };
   },
 });

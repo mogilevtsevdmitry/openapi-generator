@@ -1,39 +1,52 @@
+// src/components/RightPanel.vue
 <template>
   <v-col class="right-panel">
     <div class="panel-content">
       <h3>Редактирование</h3>
       <ControllerEditForm
-          v-if="selectedTag"
-          :selectedTag="selectedTag"
-          @update-schema="updateSchema"
-          @close-form="clearSelection"
+        v-if="selectedTag && !selectedMethod"
+        :selected-tag="selectedTag"
+        @update-schema="updateSchema"
+        @close-form="clearSelection"
       />
-      <p v-else>Выберите контроллер слева для редактирования</p>
+      <MethodEditor
+        v-else-if="selectedMethod"
+        :method="selectedMethod"
+        @update-schema="updateSchema"
+        @close-form="clearSelection"
+      />
+      <p v-else>Выберите контроллер или метод слева для редактирования</p>
     </div>
   </v-col>
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
-import ControllerEditForm from './RightPanel/ControllerEditForm.vue'
+import { defineComponent } from 'vue';
+import ControllerEditForm from './RightPanel/ControllerEditForm.vue';
+import MethodEditor from './RightPanel/MethodEditor.vue';
 
 export default defineComponent({
   name: 'RightPanel',
-  components: { ControllerEditForm },
+  components: { ControllerEditForm, MethodEditor },
   props: {
-    selectedTag: String, // Теперь RightPanel принимает selectedTag от родителя
+    selectedTag: String,
+    selectedMethod: Object as () => {
+      type: string;
+      name: string;
+      url: string;
+    } | null,
   },
   emits: ['update-schema', 'clear-selection'],
   setup(_, { emit }) {
     const updateSchema = (schema: any) => {
-      emit('update-schema', schema)
-    }
+      emit('update-schema', schema);
+    };
 
     const clearSelection = () => {
-      emit('clear-selection')
-    }
+      emit('clear-selection');
+    };
 
-    return { updateSchema, clearSelection }
+    return { updateSchema, clearSelection };
   },
-})
+});
 </script>

@@ -1,29 +1,43 @@
+// src/components/LeftPanel.vue
 <template>
   <v-col :cols="leftPanelWidth" class="left-panel">
     <div class="panel-content">
-      <ControllersList @open-edit-form="openEditForm" />
+      <ControllersList
+        @open-edit-form="openEditForm"
+        @method-selected="handleMethodSelected"
+      />
       <SchemasList />
     </div>
   </v-col>
 </template>
 
 <script lang="ts">
-import { defineComponent, inject } from 'vue'
-import SchemasList from './LeftPanel/SchemasList.vue'
-import ControllersList from './LeftPanel/ControllersList.vue'
+import { defineComponent, inject } from 'vue';
+import SchemasList from './LeftPanel/SchemasList.vue';
+import ControllersList from './LeftPanel/ControllersList.vue';
 
 export default defineComponent({
   name: 'LeftPanel',
   components: { ControllersList, SchemasList },
+  emits: ['open-edit-form', 'method-selected'], // Добавляем событие
   setup(_, { emit }) {
-    const { leftPanelWidth } = inject('openApiLogic') as any
+    const { leftPanelWidth } = inject('openApiLogic') as any;
 
     const openEditForm = (tag: string) => {
-      console.log('handle open edit form', tag)
-      emit('open-edit-form', tag)
-    }
+      console.log('handle open edit form', tag);
+      emit('open-edit-form', tag);
+    };
 
-    return { leftPanelWidth, openEditForm }
+    const handleMethodSelected = (method: {
+      type: string;
+      name: string;
+      url: string;
+    }) => {
+      console.log('Метод передан в LeftPanel:', method);
+      emit('method-selected', method); // Передаем событие в App.vue
+    };
+
+    return { leftPanelWidth, openEditForm, handleMethodSelected };
   },
-})
+});
 </script>

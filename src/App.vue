@@ -1,13 +1,18 @@
+// src/App.vue
 <template>
   <HeaderComponent />
   <v-container fluid class="main-container">
     <v-row no-gutters class="window-container">
-      <LeftPanel @open-edit-form="selectedTag = $event" />
+      <LeftPanel
+        @open-edit-form="selectedTag = $event"
+        @method-selected="handleMethodSelected"
+      />
       <ResizeHandle />
       <RightPanel
         @update-schema="updateSchema"
-        @clear-selection="selectedTag = ''"
+        @clear-selection="clearSelection"
         :selected-tag="selectedTag!"
+        :selected-method="selectedMethod"
       />
     </v-row>
   </v-container>
@@ -25,13 +30,39 @@ export default defineComponent({
   components: { HeaderComponent, LeftPanel, RightPanel, ResizeHandle },
   setup() {
     const selectedTag = ref<string | null>(null);
+    const selectedMethod = ref<{
+      type: string;
+      name: string;
+      url: string;
+    } | null>(null);
     provide('openApiLogic', useOpenApiLogic());
 
     const updateSchema = (newSchema: any) => {
       console.log('Schema updated:', newSchema);
     };
 
-    return { selectedTag, updateSchema };
+    const clearSelection = () => {
+      selectedTag.value = null;
+      selectedMethod.value = null; // Очищаем метод при сбросе
+    };
+
+    const handleMethodSelected = (method: {
+      type: string;
+      name: string;
+      url: string;
+    }) => {
+      selectedMethod.value = method;
+      selectedTag.value = null; // Сбрасываем контроллер, если выбран метод
+      console.log('Выбран метод в App.vue:', method);
+    };
+
+    return {
+      selectedTag,
+      selectedMethod,
+      updateSchema,
+      clearSelection,
+      handleMethodSelected,
+    };
   },
 });
 </script>
