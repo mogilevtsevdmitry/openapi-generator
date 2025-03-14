@@ -432,7 +432,7 @@ export default defineComponent({
       deleteDialog.value = false; // Закрываем диалог
       emit('close-form'); // Закрываем форму после удаления
     };
-    
+
     const confirmClose = () => {
       if (isDirty.value) {
         closeDialog.value = true;

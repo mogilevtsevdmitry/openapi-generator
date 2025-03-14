@@ -96,9 +96,7 @@ export function useOpenApiLogic() {
     }
 
     // Обработчики кнопок
-    const addSchema = () => console.log('Добавить схему')
     const exportYaml = () => console.log('Выгрузить YAML')
-    const addController = () => console.log('Добавить контроллер')
 
     // Загрузка схемы
     const uploadSchema = () => {
@@ -200,9 +198,7 @@ export function useOpenApiLogic() {
     return {
         leftPanelWidth,
         startResize,
-        addSchema,
         exportYaml,
-        addController,
         uploadSchema,
         handleFileUpload,
         fileInput,

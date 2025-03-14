@@ -2,14 +2,17 @@
   <v-toolbar color="primary" dark elevation="2">
     <v-toolbar-title>OpenAPI Generator (DEMO)</v-toolbar-title>
     <v-spacer></v-spacer>
+    <v-btn @click="addController" variant="outlined" class="ma-1"
+      >Добавить контроллер</v-btn
+    >
     <v-btn @click="addSchema" variant="outlined" class="ma-1"
       >Добавить схему</v-btn
     >
+    <v-btn @click="addEnum" variant="outlined" class="ma-1"
+      >Добавить ENUM</v-btn
+    >
     <v-btn @click="exportYaml" variant="outlined" class="ma-1"
       >Выгрузить YAML</v-btn
-    >
-    <v-btn @click="addController" variant="outlined" class="ma-1"
-      >Добавить контроллер</v-btn
     >
     <v-btn @click="uploadSchema" variant="outlined" class="ma-1">
       Загрузить схему
@@ -29,15 +32,23 @@ import { defineComponent, inject } from 'vue';
 
 export default defineComponent({
   name: 'HeaderComponent',
-  setup() {
+  setup(_, { emit }) {
     const {
-      addSchema,
       exportYaml,
-      addController,
       uploadSchema,
       handleFileUpload,
       fileInput,
     } = inject('openApiLogic') as any;
+
+    const addSchema = () => {
+      emit('add-schema');
+    };
+    const addEnum = () => {
+      emit('add-enum');
+    };
+    const addController = () => {
+      emit('add-controller');
+    };
 
     return {
       addSchema,
@@ -46,6 +57,7 @@ export default defineComponent({
       uploadSchema,
       handleFileUpload,
       fileInput,
+      addEnum,
     };
   },
 });

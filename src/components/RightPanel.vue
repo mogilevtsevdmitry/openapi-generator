@@ -4,7 +4,7 @@
     <div class="panel-content">
       <h3>Редактирование</h3>
       <ControllerEditForm
-        v-if="selectedTag && !selectedMethod"
+        v-if="selectedTag !== null"
         :selected-tag="selectedTag"
         @update-schema="updateSchema"
         @close-form="clearSelection"
@@ -15,7 +15,21 @@
         @update-schema="updateSchema"
         @close-form="clearSelection"
       />
-      <p v-else>Выберите контроллер или метод слева для редактирования</p>
+      <SchemaEditor
+        v-else-if="selectedSchema !== null"
+        :schema-name="selectedSchema"
+        @update-schema="updateSchema"
+        @close-form="clearSelection"
+      />
+      <EnumEditor
+        v-else-if="selectedEnum !== null"
+        :enum-name="selectedEnum"
+        @update-schema="updateSchema"
+        @close-form="clearSelection"
+      />
+      <p v-else>
+        Выберите контроллер, метод, схему или enum слева для редактирования
+      </p>
     </div>
   </v-col>
 </template>
@@ -24,10 +38,12 @@
 import { defineComponent } from 'vue';
 import ControllerEditForm from './RightPanel/ControllerEditForm.vue';
 import MethodEditor from './RightPanel/MethodEditor.vue';
+import SchemaEditor from './RightPanel/SchemaEditor.vue';
+import EnumEditor from './RightPanel/EnumEditor.vue';
 
 export default defineComponent({
   name: 'RightPanel',
-  components: { ControllerEditForm, MethodEditor },
+  components: { ControllerEditForm, MethodEditor, SchemaEditor, EnumEditor },
   props: {
     selectedTag: String,
     selectedMethod: Object as () => {
@@ -35,6 +51,8 @@ export default defineComponent({
       name: string;
       url: string;
     } | null,
+    selectedSchema: String,
+    selectedEnum: String,
   },
   emits: ['update-schema', 'clear-selection'],
   setup(_, { emit }) {
