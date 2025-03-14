@@ -5,6 +5,7 @@
       <ControllersList
         @open-edit-form="openEditForm"
         @method-selected="handleMethodSelected"
+        @add-method="addMethod"
       />
       <SchemasList @edit-schema="handleEditSchema" />
     </div>
@@ -19,7 +20,7 @@ import ControllersList from './LeftPanel/ControllersList.vue';
 export default defineComponent({
   name: 'LeftPanel',
   components: { ControllersList, SchemasList },
-  emits: ['open-edit-form', 'method-selected', 'edit-schema'], // Добавляем событие
+  emits: ['open-edit-form', 'method-selected', 'edit-schema', 'add-method'],
   setup(_, { emit }) {
     const { leftPanelWidth } = inject('openApiLogic') as any;
 
@@ -33,6 +34,11 @@ export default defineComponent({
       emit('edit-schema', schemaName);
     };
 
+    const addMethod = () => {
+      console.log('Вызвана функция addMethod в LeftPanel');
+      emit('add-method');
+    };
+
     const handleMethodSelected = (method: {
       type: string;
       name: string;
@@ -42,7 +48,13 @@ export default defineComponent({
       emit('method-selected', method); // Передаем событие в App.vue
     };
 
-    return { leftPanelWidth, openEditForm, handleMethodSelected, handleEditSchema };
+    return {
+      leftPanelWidth,
+      openEditForm,
+      handleMethodSelected,
+      handleEditSchema,
+      addMethod,
+    };
   },
 });
 </script>

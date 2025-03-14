@@ -4,6 +4,7 @@
     @add-schema="openNewSchemaEditor"
     @add-enum="openNewEnumEditor"
     @add-controller="openNewControllerEditor"
+    @edit-metadata="openMetadataEditor"
   />
   <v-container fluid class="main-container">
     <v-row no-gutters class="window-container">
@@ -11,6 +12,7 @@
         @open-edit-form="selectedTag = $event"
         @method-selected="handleMethodSelected"
         @edit-schema="openSchemaEditor"
+        @add-method="openNewMethodEditor"
       />
       <ResizeHandle />
       <RightPanel
@@ -20,6 +22,7 @@
         :selected-method="selectedMethod"
         :selected-schema="selectedSchema"
         :selected-enum="selectedEnum"
+        :selected-metadata="selectedMetadata"
       />
     </v-row>
   </v-container>
@@ -44,6 +47,7 @@ export default defineComponent({
     } | null>(null);
     const selectedSchema = ref<string | null>(null);
     const selectedEnum = ref<string | null>(null);
+    const selectedMetadata = ref<boolean>(false); // Новое состояние для метаданных
     provide('openApiLogic', useOpenApiLogic());
 
     const updateSchema = (newSchema: any) => {
@@ -57,6 +61,7 @@ export default defineComponent({
       selectedMethod.value = null;
       selectedSchema.value = null;
       selectedEnum.value = null;
+      selectedMetadata.value = false;
     };
 
     const handleMethodSelected = (method: {
@@ -64,10 +69,12 @@ export default defineComponent({
       name: string;
       url: string;
     }) => {
+      console.log('Тег передан в App.vue:', method);
       selectedMethod.value = method;
       selectedTag.value = null;
       selectedSchema.value = null;
       selectedEnum.value = null;
+      selectedMetadata.value = false;
     };
 
     const openSchemaEditor = (schemaName: string) => {
@@ -75,6 +82,7 @@ export default defineComponent({
       selectedTag.value = null;
       selectedMethod.value = null;
       selectedEnum.value = null;
+      selectedMetadata.value = false;
     };
 
     const openNewSchemaEditor = () => {
@@ -82,6 +90,7 @@ export default defineComponent({
       selectedTag.value = null;
       selectedMethod.value = null;
       selectedEnum.value = null;
+      selectedMetadata.value = false;
     };
 
     const openNewEnumEditor = () => {
@@ -89,13 +98,35 @@ export default defineComponent({
       selectedTag.value = null;
       selectedMethod.value = null;
       selectedSchema.value = null;
+      selectedMetadata.value = false;
     };
 
     const openNewControllerEditor = () => {
-      selectedEnum.value = null;
       selectedTag.value = '';
       selectedMethod.value = null;
       selectedSchema.value = null;
+      selectedEnum.value = null;
+      selectedMetadata.value = false;
+    };
+
+    const openMetadataEditor = () => {
+      selectedMetadata.value = true;
+      selectedTag.value = null;
+      selectedMethod.value = null;
+      selectedSchema.value = null;
+      selectedEnum.value = null;
+    };
+
+    const openNewMethodEditor = () => {
+      selectedMetadata.value = false;
+      selectedTag.value = null;
+      selectedMethod.value = {
+        name: '',
+        type: '',
+        url: '',
+      };
+      selectedSchema.value = null;
+      selectedEnum.value = null;
     };
 
     return {
@@ -103,6 +134,7 @@ export default defineComponent({
       selectedMethod,
       selectedSchema,
       selectedEnum,
+      selectedMetadata,
       updateSchema,
       clearSelection,
       handleMethodSelected,
@@ -110,6 +142,8 @@ export default defineComponent({
       openNewSchemaEditor,
       openNewEnumEditor,
       openNewControllerEditor,
+      openMetadataEditor,
+      openNewMethodEditor,
     };
   },
 });

@@ -5,6 +5,14 @@
       >Редактирование Enum: {{ enumName || 'Новый Enum' }}</v-card-title
     >
     <v-card-text>
+      <v-alert
+        v-if="errorMessage"
+        type="error"
+        dismissible
+        @input="errorMessage = ''"
+      >
+        {{ errorMessage }}
+      </v-alert>
       <v-text-field
         v-model="editState.name"
         label="Название Enum"
@@ -45,6 +53,7 @@ export default defineComponent({
   emits: ['update-schema', 'close-form'],
   setup(props, { emit }) {
     const { parsedSchema } = inject('openApiLogic') as any;
+    const errorMessage = ref<string>('');
     const isDirty = ref(false);
 
     const editState = ref({
@@ -80,11 +89,22 @@ export default defineComponent({
         !parsedSchema.value ||
         !editState.value.name ||
         editState.value.values.length === 0
-      )
+      ) {
+        errorMessage.value = 'Название и хотя бы одно значение обязательны!';
         return;
+      }
 
       const oldName = props.enumName;
       const newName = editState.value.name.trim();
+
+      if (
+        parsedSchema.value.components?.schemas[newName] &&
+        newName !== oldName
+      ) {
+        errorMessage.value = `Enum с именем "${newName}" уже существует! Выберите другое имя.`;
+        return;
+      }
+
       const newSchemas = { ...parsedSchema.value.components.schemas };
 
       if (oldName && oldName !== newName) {
@@ -114,6 +134,7 @@ export default defineComponent({
       saveEnum,
       closeForm,
       markDirty,
+      errorMessage,
     };
   },
 });

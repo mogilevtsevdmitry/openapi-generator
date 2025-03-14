@@ -4,7 +4,11 @@
     <div class="panel-content">
       <h3>Редактирование</h3>
       <ControllerEditForm
-        v-if="selectedTag !== null"
+        v-if="
+          selectedTag !== null &&
+          selectedMethod !== null &&
+          selectedSchema !== null
+        "
         :selected-tag="selectedTag"
         @update-schema="updateSchema"
         @close-form="clearSelection"
@@ -27,8 +31,14 @@
         @update-schema="updateSchema"
         @close-form="clearSelection"
       />
+      <MetadataEditor
+        v-else-if="selectedMetadata"
+        @update-schema="updateSchema"
+        @close-form="clearSelection"
+      />
       <p v-else>
-        Выберите контроллер, метод, схему или enum слева для редактирования
+        Выберите контроллер, метод, схему, enum или метаданные для
+        редактирования
       </p>
     </div>
   </v-col>
@@ -40,10 +50,17 @@ import ControllerEditForm from './RightPanel/ControllerEditForm.vue';
 import MethodEditor from './RightPanel/MethodEditor.vue';
 import SchemaEditor from './RightPanel/SchemaEditor.vue';
 import EnumEditor from './RightPanel/EnumEditor.vue';
+import MetadataEditor from './RightPanel/MetadataEditor.vue';
 
 export default defineComponent({
   name: 'RightPanel',
-  components: { ControllerEditForm, MethodEditor, SchemaEditor, EnumEditor },
+  components: {
+    ControllerEditForm,
+    MethodEditor,
+    SchemaEditor,
+    EnumEditor,
+    MetadataEditor,
+  },
   props: {
     selectedTag: String,
     selectedMethod: Object as () => {
@@ -53,17 +70,13 @@ export default defineComponent({
     } | null,
     selectedSchema: String,
     selectedEnum: String,
+    selectedMetadata: Boolean,
   },
   emits: ['update-schema', 'clear-selection'],
-  setup(_, { emit }) {
-    const updateSchema = (schema: any) => {
-      emit('update-schema', schema);
-    };
-
-    const clearSelection = () => {
-      emit('clear-selection');
-    };
-
+  setup(props, { emit }) {
+    console.log('RP selectedMethod', props.selectedMethod);
+    const updateSchema = (schema: any) => emit('update-schema', schema);
+    const clearSelection = () => emit('clear-selection');
     return { updateSchema, clearSelection };
   },
 });

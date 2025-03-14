@@ -39,9 +39,9 @@ import MethodsList from './MethodsList.vue';
 export default defineComponent({
   name: 'ControllersList',
   components: { MethodsList },
-  emits: ['open-edit-form', 'method-selected'], // Добавляем событие method-selected
+  emits: ['open-edit-form', 'method-selected', 'add-method'],
   setup(_, { emit }) {
-    const { groupedControllers, addMethodForController } = inject(
+    const { groupedControllers } = inject(
       'openApiLogic'
     ) as any;
     const controllerPanel = ref([0]); // Открыть первый элемент по умолчанию
@@ -51,8 +51,8 @@ export default defineComponent({
       emit('open-edit-form', tag);
     };
 
-    const addMethod = (tag: string) => {
-      addMethodForController(tag, 'GET');
+    const addMethod = () => {
+      emit('add-method');
     };
 
     const handleMethodSelected = (method: {
@@ -61,7 +61,7 @@ export default defineComponent({
       url: string;
     }) => {
       console.log('Метод передан в ControllersList:', method);
-      emit('method-selected', method); // Передаем событие дальше
+      emit('method-selected', method);
     };
 
     return {

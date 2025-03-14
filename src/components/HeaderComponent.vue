@@ -1,3 +1,4 @@
+// src/components/HeaderComponent.vue
 <template>
   <v-toolbar color="primary" dark elevation="2">
     <v-toolbar-title>OpenAPI Generator (DEMO)</v-toolbar-title>
@@ -10,6 +11,9 @@
     >
     <v-btn @click="addEnum" variant="outlined" class="ma-1"
       >Добавить ENUM</v-btn
+    >
+    <v-btn @click="editMetadata" variant="outlined" class="ma-1"
+      >Редактировать метаданные</v-btn
     >
     <v-btn @click="exportYaml" variant="outlined" class="ma-1"
       >Выгрузить YAML</v-btn
@@ -33,22 +37,14 @@ import { defineComponent, inject } from 'vue';
 export default defineComponent({
   name: 'HeaderComponent',
   setup(_, { emit }) {
-    const {
-      exportYaml,
-      uploadSchema,
-      handleFileUpload,
-      fileInput,
-    } = inject('openApiLogic') as any;
+    const { exportYaml, uploadSchema, handleFileUpload, fileInput } = inject(
+      'openApiLogic'
+    ) as any;
 
-    const addSchema = () => {
-      emit('add-schema');
-    };
-    const addEnum = () => {
-      emit('add-enum');
-    };
-    const addController = () => {
-      emit('add-controller');
-    };
+    const addSchema = () => emit('add-schema');
+    const addEnum = () => emit('add-enum');
+    const addController = () => emit('add-controller');
+    const editMetadata = () => emit('edit-metadata');
 
     return {
       addSchema,
@@ -58,6 +54,7 @@ export default defineComponent({
       handleFileUpload,
       fileInput,
       addEnum,
+      editMetadata,
     };
   },
 });

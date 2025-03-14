@@ -1,7 +1,19 @@
+// src/components/RightPanel/ControllerEditForm.vue
 <template>
   <v-card v-if="isEditing" class="mt-4">
-    <v-card-title>Редактирование контроллера: {{ editState.tag }}</v-card-title>
-    <v-card-text>
+    <v-card-title
+      >Редактирование контроллера:
+      {{ editState.tag || 'Новый контроллер' }}</v-card-title
+    >
+    <v-card-text
+      ><v-alert
+        v-if="errorMessage"
+        type="error"
+        dismissible
+        @input="errorMessage = ''"
+      >
+        {{ errorMessage }}
+      </v-alert>
       <v-text-field v-model="editState.tag" label="Тег" outlined></v-text-field>
       <v-checkbox
         v-model="editState.requiresAuth"
@@ -10,7 +22,13 @@
     </v-card-text>
     <v-card-actions>
       <v-btn color="primary" @click="saveController">Сохранить</v-btn>
-      <v-btn color="error" @click="openDeleteDialog">Удалить</v-btn>
+      <v-btn
+        color="error"
+        @click="openDeleteDialog"
+        v-if="initialState?.value?.tag"
+        >Удалить</v-btn
+      >
+      <v-btn color="secondary" @click="closeForm">Закрыть</v-btn>
     </v-card-actions>
   </v-card>
 
@@ -42,11 +60,10 @@ export default defineComponent({
   emits: ['update-schema', 'close-form'],
   setup(props, { emit }) {
     const { parsedSchema, groupedControllers } = inject('openApiLogic') as any;
-
+    const errorMessage = ref<string>('');
     const isEditing = ref(false);
     const deleteDialog = ref(false);
 
-    // Локальное состояние формы
     const initialState = ref<{ tag: string; requiresAuth: boolean }>({
       tag: '',
       requiresAuth: false,
@@ -63,8 +80,7 @@ export default defineComponent({
         if (newTag !== null) {
           isEditing.value = true;
           let requiresAuth = false;
-
-          if (parsedSchema.value?.paths) {
+          if (parsedSchema.value?.paths && newTag) {
             for (const methods of Object.values(
               parsedSchema.value.paths
             ) as any[]) {
@@ -76,8 +92,7 @@ export default defineComponent({
               }
             }
           }
-
-          initialState.value = { tag: newTag, requiresAuth };
+          initialState.value = { tag: newTag || '', requiresAuth };
           editState.value = { ...initialState.value };
         } else {
           isEditing.value = false;
@@ -87,37 +102,58 @@ export default defineComponent({
       },
       { immediate: true }
     );
-
     // Сохранение изменений
     const saveController = () => {
-      if (!parsedSchema.value || !editState.value.tag) return;
+      if (!parsedSchema.value || !editState.value.tag) {
+        errorMessage.value = 'Тег контроллера обязателен!';
+        return;
+      }
 
       const oldTag = initialState.value.tag;
       const newTag = editState.value.tag;
 
-      if (!groupedControllers.value[oldTag]) return;
+      // Инициализируем paths, если его нет
+      if (!parsedSchema.value.paths) {
+        parsedSchema.value.paths = {};
+      }
 
-      const newPaths = Object.fromEntries(
-        Object.entries(parsedSchema.value.paths).map(
-          ([path, details]: [string, any]) => {
-            const newDetails = { ...details };
-            for (const method of Object.keys(newDetails)) {
-              const methodDetails = newDetails[method];
-              if (methodDetails.tags?.[0] === oldTag) {
-                methodDetails.tags[0] = newTag;
-                if (editState.value.requiresAuth) {
-                  methodDetails.security = [{ bearerAuth: [] }];
-                } else {
-                  delete methodDetails.security;
+      // Если это новый контроллер
+      if (!oldTag) {
+        const dummyPath = `/${newTag.toLowerCase()}`; // Создаем временный путь
+        parsedSchema.value.paths[dummyPath] = {
+          get: {
+            tags: [newTag],
+            summary: `Placeholder for ${newTag}`,
+            responses: { '200': { description: 'OK' } },
+            ...(editState.value.requiresAuth
+              ? { security: [{ bearerAuth: [] }] }
+              : {}),
+          },
+        };
+      } else {
+        // Обновляем существующий контроллер
+        const newPaths = Object.fromEntries(
+          Object.entries(parsedSchema.value.paths).map(
+            ([path, details]: [string, any]) => {
+              const newDetails = { ...details };
+              for (const method of Object.keys(newDetails)) {
+                const methodDetails = newDetails[method];
+                if (methodDetails.tags?.[0] === oldTag) {
+                  methodDetails.tags[0] = newTag;
+                  if (editState.value.requiresAuth) {
+                    methodDetails.security = [{ bearerAuth: [] }];
+                  } else {
+                    delete methodDetails.security;
+                  }
                 }
               }
+              return [path, newDetails];
             }
-            return [path, newDetails];
-          }
-        )
-      );
+          )
+        );
+        parsedSchema.value.paths = newPaths;
+      }
 
-      parsedSchema.value = { ...parsedSchema.value, paths: newPaths };
       emit('update-schema', parsedSchema.value);
       emit('close-form');
       isEditing.value = false;
@@ -139,7 +175,7 @@ export default defineComponent({
               )
           )
         );
-        parsedSchema.value = { ...parsedSchema.value, paths: newPaths };
+        parsedSchema.value.paths = newPaths;
         delete groupedControllers.value[editState.value.tag];
 
         emit('update-schema', parsedSchema.value);
@@ -149,6 +185,11 @@ export default defineComponent({
       isEditing.value = false;
     };
 
+    const closeForm = () => {
+      console.log('Закрытие формы EnumEditor');
+      emit('close-form');
+    };
+
     return {
       isEditing,
       editState,
@@ -156,6 +197,9 @@ export default defineComponent({
       saveController,
       openDeleteDialog,
       deleteController,
+      errorMessage,
+      closeForm,
+      initialState,
     };
   },
 });
