@@ -6,8 +6,8 @@
       <ControllerEditForm
         v-if="
           selectedTag !== null &&
-          selectedMethod !== null &&
-          selectedSchema !== null
+          selectedMethod === null &&
+          selectedSchema === null
         "
         :selected-tag="selectedTag"
         @update-schema="updateSchema"
