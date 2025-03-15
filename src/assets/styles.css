@@ -1,0 +1,79 @@
+/* Глобальные стили */
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* Отключаем скроллинг на всей странице */
+}
+
+#app {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Основной контейнер */
+.main-container {
+  height: calc(100vh - 64px); /* Учитываем высоту заголовка, если он есть */
+  overflow: hidden;
+}
+
+/* Контейнер для окон */
+.window-container {
+  height: 100%;
+}
+
+/* Панели */
+.left-panel,
+.right-panel {
+  height: 100%; /* Панели занимают всю высоту контейнера */
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin: 8px;
+}
+
+/* Контент внутри левой панели */
+.left-panel .panel-content {
+  height: 100%; /* Занимает всю высоту панели */
+  overflow-y: auto; /* Включаем скроллинг только внутри контента */
+  overflow-x: hidden; /* Отключаем горизонтальный скроллинг */
+  padding: 16px;
+  scrollbar-width: none; /* Убираем стандартный скроллбар в Firefox */
+}
+
+/* Убираем скроллбар в Webkit-браузерах (Chrome, Safari) */
+.left-panel .panel-content::-webkit-scrollbar {
+  display: none;
+}
+
+/* Контент внутри правой панели (без скроллинга, если не нужен) */
+.right-panel .panel-content {
+  padding: 16px;
+}
+
+/* Линия для перетаскивания */
+.resize-handle {
+  width: 5px;
+  background: #ccc;
+  cursor: col-resize;
+  height: 100%;
+  margin: 8px 0;
+}
+
+/* Стили для списка методов */
+.method-item {
+  margin-bottom: 8px;
+}
+
+/* Стили для списка схем */
+.schema-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Убираем стандартные отступы Vuetify */
+.v-container {
+  padding: 0 !important;
+}
