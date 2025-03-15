@@ -25,11 +25,7 @@
 
       <!-- Параметры пути -->
       <h4>Параметры пути</h4>
-      <v-row
-        v-for="(param, index) in editState.parameters"
-        :key="index"
-        align="center"
-      >
+      <v-row v-for="(param, index) in editState.parameters" :key="index" align="center">
         <v-col cols="4">
           <v-text-field
             v-model="param.name"
@@ -51,17 +47,11 @@
           <v-btn color="error" @click="removeParameter(index)">Удалить</v-btn>
         </v-col>
       </v-row>
-      <v-btn color="primary" @click="addParameter"
-        >Добавить параметр пути</v-btn
-      >
+      <v-btn color="primary" @click="addParameter">Добавить параметр пути</v-btn>
 
       <!-- Query параметры -->
       <h4>Query параметры</h4>
-      <v-row
-        v-for="(query, index) in editState.queryParams"
-        :key="'query' + index"
-        align="center"
-      >
+      <v-row v-for="(query, index) in editState.queryParams" :key="'query' + index" align="center">
         <v-col cols="4">
           <v-text-field
             v-model="query.name"
@@ -83,9 +73,7 @@
           <v-btn color="error" @click="removeQueryParam(index)">Удалить</v-btn>
         </v-col>
       </v-row>
-      <v-btn color="primary" @click="addQueryParam"
-        >Добавить query параметр</v-btn
-      >
+      <v-btn color="primary" @click="addQueryParam">Добавить query параметр</v-btn>
 
       <!-- Request Body -->
       <h4 v-if="editState.type !== 'GET'">Request Body</h4>
@@ -102,11 +90,7 @@
 
       <!-- Ответы -->
       <h4>Ответы</h4>
-      <v-row
-        v-for="(response, index) in editState.responses"
-        :key="'response' + index"
-        align="center"
-      >
+      <v-row v-for="(response, index) in editState.responses" :key="'response' + index" align="center">
         <v-col cols="3">
           <v-text-field
             v-model="response.status"
@@ -116,13 +100,15 @@
           ></v-text-field>
         </v-col>
         <v-col cols="6">
-          <v-select
-            v-model="response.type"
+          <v-combobox
+            v-model="response.types"
             :items="allTypes"
-            label="Тип данных"
+            label="Типы данных (множественный выбор)"
+            multiple
+            chips
             outlined
             @change="markDirty"
-          ></v-select>
+          ></v-combobox>
         </v-col>
         <v-col cols="2">
           <v-btn color="error" @click="removeResponse(index)">Удалить</v-btn>
@@ -140,30 +126,20 @@
     <v-dialog v-model="closeDialog" max-width="400px">
       <v-card>
         <v-card-title>Подтверждение</v-card-title>
-        <v-card-text
-          >Схема была изменена, но не сохранена. Сохранить перед
-          закрытием?</v-card-text
-        >
+        <v-card-text>Схема была изменена, но не сохранена. Сохранить перед закрытием?</v-card-text>
         <v-card-actions>
-          <v-btn color="primary" @click="saveAndClose"
-            >Сохранить и закрыть</v-btn
-          >
-          <v-btn color="error" @click="closeWithoutSaving"
-            >Закрыть без сохранения</v-btn
-          >
+          <v-btn color="primary" @click="saveAndClose">Сохранить и закрыть</v-btn>
+          <v-btn color="error" @click="closeWithoutSaving">Закрыть без сохранения</v-btn>
           <v-btn color="secondary" @click="closeDialog = false">Отмена</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
 
-    <!-- для подтверждения закрытия -->
+    <!-- Диалог подтверждения удаления -->
     <v-dialog v-model="deleteDialog" max-width="400px">
       <v-card>
         <v-card-title>Подтверждение удаления</v-card-title>
-        <v-card-text
-          >Вы уверены, что хотите удалить метод {{ method?.type }}
-          {{ method?.url }}?</v-card-text
-        >
+        <v-card-text>Вы уверены, что хотите удалить метод {{ method?.type }} {{ method?.url }}?</v-card-text>
         <v-card-actions>
           <v-btn color="error" @click="confirmDelete">Удалить</v-btn>
           <v-btn color="secondary" @click="deleteDialog = false">Отмена</v-btn>
@@ -196,24 +172,22 @@ export default defineComponent({
     const { parsedSchema } = inject('openApiLogic') as any;
     const isDirty = ref(false);
     const closeDialog = ref(false);
+    const deleteDialog = ref(false);
     const showSuccessAlert = ref(false);
     let alertTimeout: number | null = null;
-    // Добавляем новую переменную для управления диалогом удаления
-    const deleteDialog = ref(false);
 
     const simpleTypes = ['string', 'number', 'boolean', 'integer'];
-    const schemaTypes = Object.keys(
-      parsedSchema.value?.components?.schemas || {}
-    );
+    const schemaTypes = Object.keys(parsedSchema.value?.components?.schemas || {});
     const allTypes = [...simpleTypes, ...schemaTypes];
+
     const editState = ref({
       url: props.method?.url || '',
-      type: props.method?.type.toUpperCase() || 'GET', // Убедимся, что тип в верхнем регистре
+      type: props.method?.type.toUpperCase() || 'GET',
       summary: props.method?.name || '',
       parameters: [] as { name: string; type: string }[],
       queryParams: [] as { name: string; type: string }[],
       requestBody: [] as string[],
-      responses: [] as { status: string; type: string }[],
+      responses: [] as { status: string; types: string[] }[], // Изменено с type на types
     });
 
     const updateUrlWithParameters = () => {
@@ -222,31 +196,22 @@ export default defineComponent({
         .filter((part) => !part.startsWith('{') && !part.endsWith('}'))
         .join('/');
       const paramParts = editState.value.parameters.map(
-        (p) =>
-          `{${p.name || `param${editState.value.parameters.indexOf(p) + 1}`}}`
+        (p) => `{${p.name || `param${editState.value.parameters.indexOf(p) + 1}`}}`
       );
-      editState.value.url = `${baseUrl}/${paramParts.join('/')}`.replace(
-        '//',
-        '/'
-      );
+      editState.value.url = `${baseUrl}/${paramParts.join('/')}`.replace('//', '/');
     };
 
-    // Инициализация данных из parsedSchema
     const initializeState = () => {
       if (
         !props.method ||
-        !parsedSchema.value?.paths[props.method.url]?.[
-          props.method.type.toLowerCase()
-        ]
-      )
+        !parsedSchema.value?.paths[props.method.url]?.[props.method.type.toLowerCase()]
+      ) {
         return;
-      const methodData =
-        parsedSchema.value.paths[props.method.url][
-          props.method.type.toLowerCase()
-        ];
+      }
+      const methodData = parsedSchema.value.paths[props.method.url][props.method.type.toLowerCase()];
 
       editState.value.url = props.method.url;
-      editState.value.type = props.method.type.toUpperCase(); // Приводим к верхнему регистру для v-select
+      editState.value.type = props.method.type.toUpperCase();
       editState.value.summary = methodData.summary || '';
       editState.value.parameters = (methodData.parameters || [])
         .filter((p: any) => p.in === 'path')
@@ -257,28 +222,23 @@ export default defineComponent({
           name: p.name,
           type: p.schema.type || p.schema.$ref?.split('/').pop(),
         }));
-      editState.value.requestBody = methodData.requestBody?.content[
-        'application/json'
-      ]?.schema.oneOf
+      editState.value.requestBody = methodData.requestBody?.content['application/json']?.schema.oneOf
         ? methodData.requestBody.content['application/json'].schema.oneOf.map(
             (s: any) => s.$ref.split('/').pop()
           )
         : methodData.requestBody?.content['application/json']?.schema.$ref
-        ? [
-            methodData.requestBody.content['application/json'].schema.$ref
-              .split('/')
-              .pop(),
-          ]
+        ? [methodData.requestBody.content['application/json'].schema.$ref.split('/').pop()]
         : [];
-      editState.value.responses = Object.entries(
-        methodData.responses || {}
-      ).map(([status, resp]: [string, any]) => ({
-        status,
-        type:
-          resp.content?.['application/json']?.schema.type ||
-          resp.content?.['application/json']?.schema.$ref?.split('/').pop() ||
-          'string',
-      }));
+      editState.value.responses = Object.entries(methodData.responses || {}).map(
+        ([status, resp]: [string, any]) => ({
+          status,
+          types: resp.content?.['application/json']?.schema.oneOf
+            ? resp.content['application/json'].schema.oneOf.map((s: any) => s.$ref.split('/').pop())
+            : resp.content?.['application/json']?.schema.$ref
+            ? [resp.content['application/json'].schema.$ref.split('/').pop()]
+            : [resp.content?.['application/json']?.schema.type || 'string'],
+        })
+      );
     };
 
     watch(() => props.method, initializeState, { immediate: true });
@@ -291,11 +251,9 @@ export default defineComponent({
     const addParameter = () => {
       const newParam = { name: '', type: 'string' };
       editState.value.parameters.push(newParam);
-      // Обновляем URL, добавляя новый параметр в фигурных скобках
       if (newParam.name) {
         editState.value.url = `${editState.value.url}/{${newParam.name}}`;
       } else {
-        // Если имя пустое, добавляем временный placeholder, который обновится позже
         editState.value.url = `${editState.value.url}/{param${editState.value.parameters.length}}`;
       }
       markDirty();
@@ -303,7 +261,7 @@ export default defineComponent({
 
     const removeParameter = (index: number) => {
       editState.value.parameters.splice(index, 1);
-      updateUrlWithParameters(); // Обновляем URL после удаления
+      updateUrlWithParameters();
       markDirty();
     };
 
@@ -318,7 +276,7 @@ export default defineComponent({
     };
 
     const addResponse = () => {
-      editState.value.responses.push({ status: '200', type: 'string' });
+      editState.value.responses.push({ status: '200', types: ['string'] });
       markDirty();
     };
 
@@ -368,9 +326,18 @@ export default defineComponent({
             description: '',
             content: {
               'application/json': {
-                schema: simpleTypes.includes(resp.type)
-                  ? { type: resp.type }
-                  : { $ref: `#/components/schemas/${resp.type}` },
+                schema:
+                  resp.types.length > 1
+                    ? {
+                        oneOf: resp.types.map((type) =>
+                          simpleTypes.includes(type)
+                            ? { type }
+                            : { $ref: `#/components/schemas/${type}` }
+                        ),
+                      }
+                    : simpleTypes.includes(resp.types[0])
+                    ? { type: resp.types[0] }
+                    : { $ref: `#/components/schemas/${resp.types[0]}` },
               },
             },
           };
@@ -378,10 +345,7 @@ export default defineComponent({
         }, {} as any),
       };
 
-      if (
-        editState.value.type !== 'GET' &&
-        editState.value.requestBody.length > 0
-      ) {
+      if (editState.value.type !== 'GET' && editState.value.requestBody.length > 0) {
         newPaths[newUrl][newType].requestBody = {
           required: true,
           content: {
@@ -393,9 +357,7 @@ export default defineComponent({
                         $ref: `#/components/schemas/${s}`,
                       })),
                     }
-                  : {
-                      $ref: `#/components/schemas/${editState.value.requestBody[0]}`,
-                    },
+                  : { $ref: `#/components/schemas/${editState.value.requestBody[0]}` },
             },
           },
         };
@@ -405,7 +367,6 @@ export default defineComponent({
       emit('update-schema', parsedSchema.value);
       isDirty.value = false;
 
-      // Показываем уведомление
       showSuccessAlert.value = true;
       if (alertTimeout) clearTimeout(alertTimeout);
       alertTimeout = setTimeout(() => {
@@ -414,10 +375,9 @@ export default defineComponent({
     };
 
     const deleteMethod = () => {
-      deleteDialog.value = true; // Показываем диалог подтверждения
+      deleteDialog.value = true;
     };
 
-    // Добавляем новую функцию для подтверждения удаления
     const confirmDelete = () => {
       if (!parsedSchema.value || !props.method) return;
 
@@ -429,8 +389,8 @@ export default defineComponent({
 
       parsedSchema.value = { ...parsedSchema.value, paths: newPaths };
       emit('update-schema', parsedSchema.value);
-      deleteDialog.value = false; // Закрываем диалог
-      emit('close-form'); // Закрываем форму после удаления
+      deleteDialog.value = false;
+      emit('close-form');
     };
 
     const confirmClose = () => {
